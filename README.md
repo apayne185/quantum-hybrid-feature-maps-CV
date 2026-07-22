@@ -1,5 +1,6 @@
 # Quantum Feature Maps (Hybrid Preprocessing for Computer Vision)
 
+[![CI](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml/badge.svg)](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PennyLane](https://img.shields.io/badge/PennyLane-0.37+-purple.svg)](https://pennylane.ai/)
 [![Qiskit](https://img.shields.io/badge/Qiskit-0.41+-violet.svg)](https://qiskit.org/)
@@ -46,12 +47,27 @@ conda env create --file environment.yml
 conda activate qfm-env
 ```
 
+This also installs [`src/qfm`](src/qfm) — the quantum feature map, ansatz, and feature-extraction code — as an editable package, so `import qfm` works from the notebooks and `pytest` picks it up.
+
+**Run the test suite**
+```bash
+pytest tests/ -v
+```
+Tests run automatically on every push/PR via [GitHub Actions](.github/workflows/ci.yml).
+
 ## Repository Organization
 ```
 quantum-hybrid-feature-maps-CV/
 ├── environment.yml       # Conda env configuration for qfm-env
+├── pyproject.toml        # Makes src/qfm pip-installable (editable install)
 ├── README.md             # This file
 ├── LICENSE
+├── .github/workflows/ci.yml  # Runs pytest on push/PR
+├── src/qfm/               # Quantum feature map + ansatz code, shared across notebooks
+│   ├── feature_maps.py    # ZZ/basis/angle/amplitude encodings
+│   ├── ansatz.py          # Variational ansatz
+│   └── features.py        # Circuit -> classical feature vector helper
+├── tests/                 # pytest unit tests for src/qfm
 ├── notebooks/
 │   ├── data/
 │   │   └── mnist01_pca4.npz     # PCA-reduced features (raw MNIST is gitignored, auto-downloaded)
