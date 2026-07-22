@@ -8,3 +8,6 @@ notebooks/data/MNIST/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+*.egg-info/
+build/
+dist/
