@@ -3,7 +3,7 @@
 [![CI](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml/badge.svg)](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PennyLane](https://img.shields.io/badge/PennyLane-0.37+-purple.svg)](https://pennylane.ai/)
-[![Qiskit](https://img.shields.io/badge/Qiskit-0.41+-violet.svg)](https://qiskit.org/)
+[![Qiskit](https://img.shields.io/badge/Qiskit-2.3-violet.svg)](https://qiskit.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![NumPy](https://img.shields.io/badge/numpy-1.24+-lightblue.svg)](https://numpy.org/)
 [![Pandas](https://img.shields.io/badge/pandas-2.0+-teal.svg)](https://pandas.pydata.org/)
@@ -38,6 +38,15 @@ Task: binary classification of MNIST digits 0 vs. 1, reduced to ≤4 features vi
 Full sweep across qubit count (2-4), circuit depth (1-2), and shot count (analytic vs. 1024 shots) is logged in [`results/metrics/`](results/metrics/) and produced by [`quantum_pipeline.ipynb`](notebooks/quantum_pipeline.ipynb) / [`final_analysis.ipynb`](notebooks/final_analysis.ipynb).
 
 **Takeaway:** on this task the classes are close to linearly separable, so the classical baselines are hard to beat — the quantum-feature models top out around 91-92% (3 qubits, depth 1) and *degrade* as qubits/depth increase (down to ~70% at 4 qubits, depth 2). That's consistent with added circuit expressivity increasing optimization difficulty (more local minima / flatter loss landscape) faster than it adds useful nonlinearity, given no noise mitigation or trainable-embedding tricks are used here. This is treated as a real, reported negative result rather than something to talk around — see [Research Motivation](#research-motivation) below.
+
+## When Would a Business Actually Use This?
+
+This is the question that matters more than the accuracy table above: **is quantum-enhanced preprocessing worth paying for, given real access costs?**
+
+- **Cost and latency are real inputs, not footnotes.** Real IBM Quantum hardware access is metered (queue time + paid compute time), and even on a local simulator, the quantum-feature pipeline here is 5-1000x slower per inference than the classical baseline (see `runtime_sec` in [`results/metrics/`](results/metrics/): e.g. SVM on quantum features at 4 qubits/1024 shots takes ~12.8s vs. 0.06s for classical SVM). A business case has to clear that latency/cost bar before accuracy is even discussed.
+- **On this task, it doesn't clear the bar.** MNIST 0-vs-1 is close to linearly separable, so classical Logistic Regression/SVM already get 99.6% for near-zero cost. Paying for quantum compute here would be strictly worse on every axis (accuracy, latency, cost) — the right recommendation to a client would be "don't."
+- **Where the calculus could flip:** tasks where (a) classical models plateau well below what's needed (e.g. a class-imbalanced fraud/anomaly detection problem where a few extra points of recall on the minority class are worth real money), and (b) the data has structure a classical kernel struggles to capture (genuinely high-dimensional, correlated features rather than an already-separable toy set). Even then, the honest first step is the comparison this repo runs — quantify the actual accuracy delta and its dollar value, then check if it survives the added latency/compute cost, before recommending a client invest in quantum hardware access.
+- **This is the workflow, not just the result.** The reusable part for a QAAS setting isn't "quantum beat classical here" (it didn't) — it's the benchmarking harness (`src/qfm` + the sweep/analysis notebooks) that can be pointed at a new client dataset to make that go/no-go call quickly and honestly.
 
 ## Configure Environment
 
