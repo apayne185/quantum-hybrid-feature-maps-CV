@@ -16,6 +16,11 @@ dependencies = [
 dev = [
     "pytest",
 ]
+demo = [
+    "streamlit",
+    "pandas",
+    "scikit-learn",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

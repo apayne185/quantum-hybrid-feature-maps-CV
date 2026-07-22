@@ -24,6 +24,15 @@ QFM integrates classical dimensionality reduction with parameterized quantum cir
 
 This repo provides reproducible experiments for classical and hybrid quantum-classical models, along with visualizations, parameter sweeps, and IBM Quantum integration.
 
+## Interactive Demo
+
+```bash
+pip install -e ".[demo]"
+streamlit run app.py
+```
+
+Lets you move the qubit count, ZZ feature map depth, and shot count sliders and watch quantum-feature accuracy, runtime, and the resulting circuit diagram update live, next to the classical baseline. Uses the pretrained ansatz parameters in `notebooks/params/` (training takes hours) and a small random subsample for interactive response times — see [Results at a Glance](#results-at-a-glance) below for the full-dataset numbers.
+
 ## Results at a Glance
 
 Task: binary classification of MNIST digits 0 vs. 1, reduced to ≤4 features via PCA.
@@ -69,6 +78,7 @@ Tests run automatically on every push/PR via [GitHub Actions](.github/workflows/
 quantum-hybrid-feature-maps-CV/
 ├── environment.yml       # Conda env configuration for qfm-env
 ├── pyproject.toml        # Makes src/qfm pip-installable (editable install)
+├── app.py                # Streamlit interactive demo (pip install -e ".[demo]")
 ├── README.md             # This file
 ├── LICENSE
 ├── .github/workflows/ci.yml  # Runs pytest on push/PR
