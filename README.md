@@ -1,7 +1,7 @@
 # Quantum Feature Maps (Hybrid Preprocessing for Computer Vision)
 
 [![CI](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml/badge.svg)](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PennyLane](https://img.shields.io/badge/PennyLane-0.37+-purple.svg)](https://pennylane.ai/)
 [![Qiskit](https://img.shields.io/badge/Qiskit-2.3-violet.svg)](https://qiskit.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
