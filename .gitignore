@@ -1,2 +1,10 @@
 notes.txt
 .env
+
+# Raw MNIST is auto-downloaded by notebooks/data_prep.ipynb (torchvision, download=True)
+# — no need to version 64MB of upstream binary data.
+notebooks/data/MNIST/
+
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
