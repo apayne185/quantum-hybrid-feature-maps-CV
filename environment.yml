@@ -2,7 +2,7 @@ name: qfm-env
 channels: 
   - defaults
 dependencies: 
-  - python=3.10
+  - python=3.11
   - pip
   - numpy
   - pandas
@@ -27,6 +27,7 @@ dependencies:
     - python-dotenv
     - joblib
     - pytest
+    - streamlit
     - -e .
 
 

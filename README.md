@@ -1,7 +1,7 @@
 # Quantum Feature Maps (Hybrid Preprocessing for Computer Vision)
 
 [![CI](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml/badge.svg)](https://github.com/apayne185/quantum-hybrid-feature-maps-CV/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PennyLane](https://img.shields.io/badge/PennyLane-0.37+-purple.svg)](https://pennylane.ai/)
 [![Qiskit](https://img.shields.io/badge/Qiskit-2.3-violet.svg)](https://qiskit.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
@@ -23,6 +23,15 @@ QFM integrates classical dimensionality reduction with parameterized quantum cir
 * When/if quantum-enhanced preprocessing can outperform classical methods on small-scale classification tasks.
 
 This repo provides reproducible experiments for classical and hybrid quantum-classical models, along with visualizations, parameter sweeps, and IBM Quantum integration.
+
+## Interactive Demo
+
+```bash
+pip install -e ".[demo]"
+streamlit run app.py
+```
+
+Lets you move the qubit count, ZZ feature map depth, and shot count sliders and watch quantum-feature accuracy, runtime, and the resulting circuit diagram update live, next to the classical baseline. Uses the pretrained ansatz parameters in `notebooks/params/` (training takes hours) and a small random subsample for interactive response times — see [Results at a Glance](#results-at-a-glance) below for the full-dataset numbers.
 
 ## Results at a Glance
 
@@ -69,6 +78,7 @@ Tests run automatically on every push/PR via [GitHub Actions](.github/workflows/
 quantum-hybrid-feature-maps-CV/
 ├── environment.yml       # Conda env configuration for qfm-env
 ├── pyproject.toml        # Makes src/qfm pip-installable (editable install)
+├── app.py                # Streamlit interactive demo (pip install -e ".[demo]")
 ├── README.md             # This file
 ├── LICENSE
 ├── .github/workflows/ci.yml  # Runs pytest on push/PR

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "qfm"
 version = "0.1.0"
 description = "Quantum feature maps for hybrid classical-quantum preprocessing"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "pennylane",
     "numpy",
@@ -15,6 +15,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+]
+demo = [
+    "streamlit",
+    "pandas",
+    "scikit-learn",
 ]
 
 [tool.setuptools.packages.find]
