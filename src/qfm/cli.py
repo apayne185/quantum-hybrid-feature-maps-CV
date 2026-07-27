@@ -90,9 +90,19 @@ def main(argv=None):
         print(f"error: target column {args.target!r} not found in {args.data}", file=sys.stderr)
         return 1
 
-    X_train, y_train, X_test, y_test, n_qubits = _prepare_data(
-        df, args.target, args.qubits, args.test_size, args.seed
-    )
+    try:
+        X_train, y_train, X_test, y_test, n_qubits = _prepare_data(
+            df, args.target, args.qubits, args.test_size, args.seed
+        )
+    except ValueError as e:
+        print(
+            f"error: could not split/prepare {args.data!r}: {e}\n"
+            "This usually means a class in the target column has too few rows for "
+            "the requested --test-size split. Try a smaller --test-size, or check "
+            "the target column has enough examples of each class.",
+            file=sys.stderr,
+        )
+        return 1
     if n_qubits < args.qubits:
         print(f"note: using {n_qubits} qubits (dataset only has {n_qubits} usable features)", file=sys.stderr)
 

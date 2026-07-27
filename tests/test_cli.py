@@ -76,3 +76,21 @@ def test_main_reports_error_for_missing_target_column(tmp_path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "not_a_column" in captured.err
+
+
+def test_main_reports_clean_error_for_class_too_small_to_stratify(tmp_path, capsys):
+    # regression test: a minority class too small for a stratified split used to
+    # crash with a raw sklearn traceback instead of a handled, exit-code-1 error.
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(30, 3))
+    y = np.array([0] * 29 + [1])  # 1 minority-class example - too few to split
+    df = pd.DataFrame(X, columns=["a", "b", "c"])
+    df["label"] = y
+    path = tmp_path / "imbalanced.csv"
+    df.to_csv(path, index=False)
+
+    exit_code = main(["--data", str(path), "--target", "label", "--epochs", "2"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "error:" in captured.err
