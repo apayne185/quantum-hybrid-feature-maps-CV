@@ -9,8 +9,14 @@ description = "Quantum feature maps for hybrid classical-quantum preprocessing"
 requires-python = ">=3.11"
 dependencies = [
     "pennylane",
+    "pennylane-lightning",
     "numpy",
+    "pandas",
+    "scikit-learn",
 ]
+
+[project.scripts]
+qfm-evaluate = "qfm.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -18,8 +24,6 @@ dev = [
 ]
 demo = [
     "streamlit",
-    "pandas",
-    "scikit-learn",
 ]
 
 [tool.setuptools.packages.find]
