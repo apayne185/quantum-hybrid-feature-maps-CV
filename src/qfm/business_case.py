@@ -44,6 +44,11 @@ class CostAssumptions:
     QPU access is typically billed per second of runtime, not per shot; this
     collapses that into a flat per-shot rate as a simple, adjustable proxy so a
     client's actual quoted rate can be substituted via `cost_per_shot_usd`.
+
+    Only covers the feature-extraction (inference) circuit executions, not ansatz
+    training - training runs via classical backprop simulation here (as it typically
+    would in practice, since gradient-based training directly on hardware would need
+    far more shots per step than inference), so it is not itself billed to a QPU.
     """
 
     cost_per_shot_usd: float = 0.00003
@@ -55,8 +60,10 @@ class BusinessCaseReport:
     classical_accuracy: float
     classical_runtime_sec: float
     quantum_accuracy: float
-    quantum_runtime_sec: float
-    quantum_estimated_cost_usd: float
+    quantum_runtime_sec: float  # total: training_runtime_sec + inference_runtime_sec
+    training_runtime_sec: float
+    inference_runtime_sec: float
+    quantum_estimated_cost_usd: float  # inference (billable shots) only - see CostAssumptions
     accuracy_delta: float
     verdict: Verdict
     reasoning: str
@@ -65,8 +72,9 @@ class BusinessCaseReport:
     def summary(self) -> str:
         lines = [
             f"Classical accuracy:  {self.classical_accuracy:.1%}  ({self.classical_runtime_sec:.4f}s)",
-            f"Quantum accuracy:    {self.quantum_accuracy:.1%}  ({self.quantum_runtime_sec:.4f}s, "
-            f"~${self.quantum_estimated_cost_usd:.4f} estimated)",
+            f"Quantum accuracy:    {self.quantum_accuracy:.1%}  ({self.quantum_runtime_sec:.4f}s total: "
+            f"{self.training_runtime_sec:.4f}s training + {self.inference_runtime_sec:.4f}s inference, "
+            f"~${self.quantum_estimated_cost_usd:.4f} estimated inference cost)",
             f"Accuracy delta:      {self.accuracy_delta:+.1%}",
             f"Verdict:             {self.verdict.value}",
             "",
@@ -141,9 +149,11 @@ def evaluate_business_case(
     # across all epochs, for no speed benefit - artificially handicapping the quantum
     # path's accuracy. max_samples is applied below, only to the feature-extraction
     # step, which has no such internal bounding mechanism of its own.
+    t0 = time.time()
     params, loss_history = train_ansatz(
         X_train, y_train, n_qubits=n_qubits, layers=layers, reps=reps, epochs=epochs, seed=seed
     )
+    training_runtime_sec = time.time() - t0
 
     Xq_train_in, yq_train = _subsample(X_train, y_train, max_samples, seed)
     Xq_test_in, yq_test = _subsample(X_test, y_test, max_samples, seed)
@@ -159,7 +169,8 @@ def evaluate_business_case(
     quantum_clf = _CLASSIFIERS[classifier]()
     quantum_clf.fit(Xq_train, yq_train)
     quantum_accuracy = quantum_clf.score(Xq_test, yq_test)
-    quantum_runtime_sec = time.time() - t0
+    inference_runtime_sec = time.time() - t0
+    quantum_runtime_sec = training_runtime_sec + inference_runtime_sec
 
     n_circuit_evals = len(Xq_train_in) + len(Xq_test_in)
     billed_shots_per_eval = shots or 1  # analytic mode still stands in for ~1 shot-equivalent of cost
@@ -175,6 +186,8 @@ def evaluate_business_case(
         classical_runtime_sec=classical_runtime_sec,
         quantum_accuracy=quantum_accuracy,
         quantum_runtime_sec=quantum_runtime_sec,
+        training_runtime_sec=training_runtime_sec,
+        inference_runtime_sec=inference_runtime_sec,
         quantum_estimated_cost_usd=quantum_estimated_cost_usd,
         accuracy_delta=accuracy_delta,
         verdict=verdict,

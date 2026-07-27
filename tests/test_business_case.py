@@ -121,6 +121,25 @@ def test_evaluate_business_case_returns_well_formed_report():
     assert "Verdict:" in report.summary()
 
 
+def test_evaluate_business_case_runtime_includes_training():
+    # regression test: quantum_runtime_sec must include ansatz training time, not
+    # just the feature-extraction/classifier-fit step - otherwise the reported
+    # runtime silently understates the true cost of the quantum path.
+    X_train, y_train, X_test, y_test = _toy_dataset()
+
+    report = evaluate_business_case(
+        X_train, y_train, X_test, y_test,
+        n_qubits=2, reps=1, layers=1, shots=None, epochs=2, seed=0,
+    )
+
+    assert report.training_runtime_sec > 0
+    assert report.inference_runtime_sec > 0
+    assert report.quantum_runtime_sec == pytest.approx(
+        report.training_runtime_sec + report.inference_runtime_sec
+    )
+    assert f"{report.training_runtime_sec:.4f}s training" in report.summary()
+
+
 def test_evaluate_business_case_rejects_unknown_classifier():
     X_train, y_train, X_test, y_test = _toy_dataset()
     with pytest.raises(ValueError):
