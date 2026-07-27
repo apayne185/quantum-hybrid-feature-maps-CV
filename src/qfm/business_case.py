@@ -108,10 +108,12 @@ def evaluate_business_case(
             the classical baseline and the quantum-feature classifier for a fair comparison.
         cost_assumptions: a CostAssumptions instance; defaults are illustrative.
         max_samples: if given, caps how many train/test rows go through the quantum
-            circuit (each row is one unbatched circuit execution, so cost is roughly
-            linear in row count). The classical baseline still uses the full dataset,
-            so this trades a strictly apples-to-apples comparison for a bounded,
-            interactive runtime; pass None (default) for a full-data comparison.
+            feature-extraction circuit after ansatz training (each row is one unbatched
+            circuit execution, so cost is roughly linear in row count). Does not affect
+            ansatz training, which always uses the full X_train (see train_ansatz's own
+            batch_size for that). The classical baseline still uses the full dataset, so
+            this trades a strictly apples-to-apples comparison for a bounded, interactive
+            runtime; pass None (default) for a full-data comparison.
         seed: random seed for ansatz training and subsampling.
 
     Returns:
@@ -133,12 +135,18 @@ def evaluate_business_case(
     classical_accuracy = classical_clf.score(X_test, y_test)
     classical_runtime_sec = time.time() - t0
 
+    # Trained on the full X_train, not a max_samples subsample: train_ansatz already
+    # bounds its own per-epoch cost via batch_size regardless of dataset size, so
+    # subsampling here first would only shrink the pool of rows the ansatz ever sees
+    # across all epochs, for no speed benefit - artificially handicapping the quantum
+    # path's accuracy. max_samples is applied below, only to the feature-extraction
+    # step, which has no such internal bounding mechanism of its own.
+    params, loss_history = train_ansatz(
+        X_train, y_train, n_qubits=n_qubits, layers=layers, reps=reps, epochs=epochs, seed=seed
+    )
+
     Xq_train_in, yq_train = _subsample(X_train, y_train, max_samples, seed)
     Xq_test_in, yq_test = _subsample(X_test, y_test, max_samples, seed)
-
-    params, loss_history = train_ansatz(
-        Xq_train_in, yq_train, n_qubits=n_qubits, layers=layers, reps=reps, epochs=epochs, seed=seed
-    )
 
     # lightning.qubit (compiled C++ backend) for feature extraction: this is shot-based
     # inference with no gradients, where it's faster than default.qubit. Training uses
