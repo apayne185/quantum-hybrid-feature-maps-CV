@@ -15,16 +15,39 @@
 
 ## Project Overview
 
-Quantum feature maps (QFMs) are hybrid ML techniques that explore how quantum circuits can enhance classical preprocessing pipelines, specifically here for computer vision datasets such as MNIST. This project investigates the use of QFMs as nonlinear transformations that embed classical data into a high-dimensional Hilbert space, allowing classical models (Logistic Regression, SVM) to potentially capture richer relationships than standard classical embeddings.
+Quantum feature maps (QFMs) are hybrid ML techniques that explore how quantum circuits can enhance classical preprocessing pipelines. This project investigates the use of QFMs as nonlinear transformations that embed classical data into a high-dimensional Hilbert space, allowing classical models (Logistic Regression, SVM) to potentially capture richer relationships than standard classical embeddings.
 
 QFM integrates classical dimensionality reduction with parameterized quantum circuits (PQCs) implemented in PennyLane (and tested in Qiskit), benchmarking their performance against classical baselines. The goal is to understand:
 
 * How the choice of quantum feature map, ansatz, and backend impacts performance.
 * When/if quantum-enhanced preprocessing can outperform classical methods on small-scale classification tasks.
+* **Whether that's worth paying for** — every comparison here is reported alongside runtime/compute cost, not just accuracy, so the output is a recommendation, not just a number.
 
-This repo provides reproducible experiments for classical and hybrid quantum-classical models, along with visualizations, parameter sweeps, and IBM Quantum integration.
+It started as an MNIST-specific experiment (see [Results at a Glance](#results-at-a-glance) below) and has since been generalized: `qfm-evaluate` runs the same classical-vs-quantum comparison, with a cost-aware go/no-go verdict, on **any binary-labeled tabular dataset**, so it's a reusable tool for making this call on a new business problem rather than a one-off study.
 
-## Interactive Demo
+## Evaluate Your Own Dataset
+
+```bash
+pip install -e .
+qfm-evaluate --data mydata.csv --target label_column
+```
+
+Splits the data, trains a classical baseline (Logistic Regression or SVM) and a quantum-feature pipeline (PCA → ZZ feature map → trained variational ansatz → the same classifier) on it from scratch, and prints a verdict:
+
+```
+Classical accuracy:  93.9%  (0.032s)
+Quantum accuracy:    78.1%  (5.15s, ~$4.06 estimated)
+Accuracy delta:      -15.8%
+Verdict:             classical_wins
+
+Quantum features did not beat the classical baseline (-15.8%) while costing an
+estimated $4.06 and running ~160x slower. Recommend the classical model.
+```
+(that example run is on `sklearn`'s breast cancer dataset — a real binary diagnosis task, not MNIST)
+
+Key flags: `--qubits`, `--reps` (feature map depth), `--layers` (ansatz depth), `--shots`, `--epochs`, `--classifier {logistic_regression,svm}`, `--cost-per-shot` (illustrative $/shot — substitute a real quoted rate), `--max-samples` (caps quantum-path rows for a fast interactive run; `0` disables the cap for a full-data comparison). Run `qfm-evaluate --help` for the full list. The underlying pieces (`qfm.training.train_ansatz`, `qfm.business_case.evaluate_business_case`) are also usable directly from Python — see [`src/qfm/business_case.py`](src/qfm/business_case.py).
+
+## Interactive Demo (MNIST case study)
 
 ```bash
 pip install -e ".[demo]"
@@ -33,7 +56,7 @@ streamlit run app.py
 
 Lets you move the qubit count, ZZ feature map depth, and shot count sliders and watch quantum-feature accuracy, runtime, and the resulting circuit diagram update live, next to the classical baseline. Uses the pretrained ansatz parameters in `notebooks/params/` (training takes hours) and a small random subsample for interactive response times — see [Results at a Glance](#results-at-a-glance) below for the full-dataset numbers.
 
-## Results at a Glance
+## Results at a Glance (MNIST Case Study)
 
 Task: binary classification of MNIST digits 0 vs. 1, reduced to ≤4 features via PCA.
 
@@ -55,7 +78,7 @@ This is the question that matters more than the accuracy table above: **is quant
 - **Cost and latency are real inputs, not footnotes.** Real IBM Quantum hardware access is metered (queue time + paid compute time), and even on a local simulator, the quantum-feature pipeline here is 5-1000x slower per inference than the classical baseline (see `runtime_sec` in [`results/metrics/`](results/metrics/): e.g. SVM on quantum features at 4 qubits/1024 shots takes ~12.8s vs. 0.06s for classical SVM). A business case has to clear that latency/cost bar before accuracy is even discussed.
 - **On this task, it doesn't clear the bar.** MNIST 0-vs-1 is close to linearly separable, so classical Logistic Regression/SVM already get 99.6% for near-zero cost. Paying for quantum compute here would be strictly worse on every axis (accuracy, latency, cost) — the right recommendation to a client would be "don't."
 - **Where the calculus could flip:** tasks where (a) classical models plateau well below what's needed (e.g. a class-imbalanced fraud/anomaly detection problem where a few extra points of recall on the minority class are worth real money), and (b) the data has structure a classical kernel struggles to capture (genuinely high-dimensional, correlated features rather than an already-separable toy set). Even then, the honest first step is the comparison this repo runs — quantify the actual accuracy delta and its dollar value, then check if it survives the added latency/compute cost, before recommending a client invest in quantum hardware access.
-- **This is the workflow, not just the result.** The reusable part for a QAAS setting isn't "quantum beat classical here" (it didn't) — it's the benchmarking harness (`src/qfm` + the sweep/analysis notebooks) that can be pointed at a new client dataset to make that go/no-go call quickly and honestly.
+- **This is the workflow, not just the result.** The reusable part for a QAAS setting isn't "quantum beat classical here" (it didn't) — it's the benchmarking harness. That's now literally a tool (`qfm-evaluate`, see [Evaluate Your Own Dataset](#evaluate-your-own-dataset) above), not just a notebook someone has to hand-edit for the next dataset — point it at a new client's CSV and get the same cost-aware go/no-go call.
 
 ## Configure Environment
 
@@ -65,7 +88,7 @@ conda env create --file environment.yml
 conda activate qfm-env
 ```
 
-This also installs [`src/qfm`](src/qfm) — the quantum feature map, ansatz, and feature-extraction code — as an editable package, so `import qfm` works from the notebooks and `pytest` picks it up.
+This also installs [`src/qfm`](src/qfm) — the quantum feature map, ansatz, training, and business-case evaluation code, plus the `qfm-evaluate` CLI — as an editable package, so `import qfm` works from the notebooks and `pytest` picks it up.
 
 **Run the test suite**
 ```bash
@@ -85,7 +108,10 @@ quantum-hybrid-feature-maps-CV/
 ├── src/qfm/               # Quantum feature map + ansatz code, shared across notebooks
 │   ├── feature_maps.py    # ZZ/basis/angle/amplitude encodings
 │   ├── ansatz.py          # Variational ansatz
-│   └── features.py        # Circuit -> classical feature vector helper
+│   ├── features.py        # Circuit -> classical feature vector helper
+│   ├── training.py        # Fit ansatz params on any binary-labeled dataset
+│   ├── business_case.py   # Cost model + go/no-go verdict (evaluate_business_case)
+│   └── cli.py             # `qfm-evaluate` entrypoint
 ├── tests/                 # pytest unit tests for src/qfm
 ├── notebooks/
 │   ├── data/
