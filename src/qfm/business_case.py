@@ -196,14 +196,22 @@ def evaluate_business_case(
     )
 
 
+def _format_slowdown(quantum_time, classical_time):
+    if classical_time <= 0:
+        # classical_time measured as ~0s (fast classifier, coarse timer resolution) -
+        # "~infx" would otherwise print literally from f"{float('inf'):.0f}"
+        return "an unmeasurably large multiple"
+    return f"~{quantum_time / classical_time:.0f}x"
+
+
 def _make_verdict(accuracy_delta, cost_usd, quantum_time, classical_time, cost_assumptions):
-    slowdown = quantum_time / classical_time if classical_time > 0 else float("inf")
+    slowdown = _format_slowdown(quantum_time, classical_time)
 
     if accuracy_delta <= 0:
         verdict = Verdict.CLASSICAL_WINS
         reasoning = (
             f"Quantum features did not beat the classical baseline ({accuracy_delta:+.1%}) "
-            f"while costing an estimated ${cost_usd:.4f} and running ~{slowdown:.0f}x slower. "
+            f"while costing an estimated ${cost_usd:.4f} and running {slowdown} slower. "
             "Recommend the classical model."
         )
     elif accuracy_delta < cost_assumptions.competitive_margin:
@@ -211,7 +219,7 @@ def _make_verdict(accuracy_delta, cost_usd, quantum_time, classical_time, cost_a
         reasoning = (
             f"Quantum features edged out classical by {accuracy_delta:+.1%}, within the "
             f"{cost_assumptions.competitive_margin:.0%} margin treated as roughly tied here. "
-            f"At an estimated ${cost_usd:.4f} and ~{slowdown:.0f}x the runtime, this alone "
+            f"At an estimated ${cost_usd:.4f} and {slowdown} the runtime, this alone "
             "doesn't justify quantum compute - worth a second look only if the dataset or "
             "ansatz changes meaningfully, or if classical approaches have already plateaued."
         )
@@ -220,7 +228,7 @@ def _make_verdict(accuracy_delta, cost_usd, quantum_time, classical_time, cost_a
         reasoning = (
             f"Quantum features beat classical by {accuracy_delta:+.1%}, clearing the "
             f"{cost_assumptions.competitive_margin:.0%} competitive margin. Whether that's worth "
-            f"the estimated ${cost_usd:.4f} and ~{slowdown:.0f}x runtime depends on what each "
+            f"the estimated ${cost_usd:.4f} and {slowdown} runtime depends on what each "
             "accuracy point is worth in this business context - worth taking to a stakeholder."
         )
 

@@ -60,12 +60,22 @@ def test_verdict_quantum_wins_beyond_margin():
     assert "stakeholder" in reasoning
 
 
-def test_verdict_handles_zero_classical_time():
+def test_verdict_handles_zero_classical_time_without_printing_inf():
+    # regression test: slowdown = quantum_time / classical_time defaulted to
+    # float("inf") when classical_time was 0, which f"{...:.0f}" rendered as the
+    # literal, nonsensical string "inf" in the reasoning text (e.g. "~infx slower").
     verdict, reasoning = _make_verdict(
         accuracy_delta=-0.01, cost_usd=1.0, quantum_time=10, classical_time=0, cost_assumptions=CostAssumptions()
     )
     assert verdict is Verdict.CLASSICAL_WINS
-    assert "inf" not in reasoning.lower() or True  # just shouldn't raise
+    assert "inf" not in reasoning.lower()
+
+
+def test_verdict_formats_slowdown_normally_when_classical_time_positive():
+    _, reasoning = _make_verdict(
+        accuracy_delta=-0.01, cost_usd=1.0, quantum_time=100, classical_time=1, cost_assumptions=CostAssumptions()
+    )
+    assert "~100x" in reasoning
 
 
 # --- _subsample ---
