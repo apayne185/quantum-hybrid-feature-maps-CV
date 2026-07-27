@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from qfm.training import train_ansatz
 
@@ -44,6 +45,24 @@ def test_train_ansatz_is_deterministic_given_seed():
 def test_train_ansatz_accepts_full_batch_when_batch_size_none():
     X, y = _toy_dataset(n=10)
     params, loss_history = train_ansatz(X, y, n_qubits=2, layers=1, epochs=2, batch_size=None)
+
+    assert params.shape == (1, 2, 3)
+    assert len(loss_history) == 2
+
+
+def test_train_ansatz_rejects_multiclass_target():
+    X, _ = _toy_dataset(n=30)
+    y = np.array([0, 1, 2] * 10)
+
+    with pytest.raises(ValueError, match="binary target"):
+        train_ansatz(X, y, n_qubits=2, epochs=2, batch_size=8)
+
+
+def test_train_ansatz_accepts_string_labels():
+    X, _ = _toy_dataset()
+    y = np.array(["yes", "no"] * 8)
+
+    params, loss_history = train_ansatz(X, y, n_qubits=2, layers=1, epochs=2, batch_size=8)
 
     assert params.shape == (1, 2, 3)
     assert len(loss_history) == 2
