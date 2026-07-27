@@ -94,3 +94,29 @@ def test_main_reports_clean_error_for_class_too_small_to_stratify(tmp_path, caps
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "error:" in captured.err
+    assert "too few" in captured.err  # the actual cause, not misattributed elsewhere
+
+
+def test_main_reports_clean_error_for_non_numeric_feature_column(tmp_path, capsys):
+    # regression test: a categorical feature column used to crash inside
+    # train_test_split/StandardScaler with "could not convert string to float",
+    # and - after the stratify fix above - risked being caught by the same
+    # except block and misreported as a class-imbalance problem instead.
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "age": rng.normal(50, 10, 40),
+            "region": rng.choice(["north", "south", "east"], 40),
+            "label": rng.integers(0, 2, 40),
+        }
+    )
+    path = tmp_path / "categorical.csv"
+    df.to_csv(path, index=False)
+
+    exit_code = main(["--data", str(path), "--target", "label", "--epochs", "2"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "non-numeric" in captured.err
+    assert "region" in captured.err
+    assert "too few" not in captured.err  # must not misattribute to class imbalance

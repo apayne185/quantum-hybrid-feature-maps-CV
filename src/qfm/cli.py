@@ -21,11 +21,26 @@ from qfm.business_case import CostAssumptions, evaluate_business_case
 
 def _prepare_data(df, target, n_qubits, test_size, seed):
     y = df[target].to_numpy()
-    X = df.drop(columns=[target]).to_numpy()
+    X_df = df.drop(columns=[target])
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=seed, stratify=y
-    )
+    non_numeric = X_df.select_dtypes(exclude="number").columns.tolist()
+    if non_numeric:
+        raise ValueError(
+            f"non-numeric feature column(s) {non_numeric}: qfm-evaluate expects numeric "
+            "features - encode categorical columns (e.g. one-hot or label encoding) before passing them in"
+        )
+    X = X_df.to_numpy()
+
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=seed, stratify=y
+        )
+    except ValueError as e:
+        raise ValueError(
+            f"{e}\nThis usually means a class in the target column has too few rows for "
+            f"the requested --test-size={test_size} split. Try a smaller --test-size, or "
+            "check the target column has enough examples of each class."
+        ) from e
 
     scaler = StandardScaler().fit(X_train)
     X_train, X_test = scaler.transform(X_train), scaler.transform(X_test)
@@ -95,13 +110,11 @@ def main(argv=None):
             df, args.target, args.qubits, args.test_size, args.seed
         )
     except ValueError as e:
-        print(
-            f"error: could not split/prepare {args.data!r}: {e}\n"
-            "This usually means a class in the target column has too few rows for "
-            "the requested --test-size split. Try a smaller --test-size, or check "
-            "the target column has enough examples of each class.",
-            file=sys.stderr,
-        )
+        # _prepare_data raises a specific, already-complete message per failure
+        # cause (non-numeric features vs. a target class too small to split) -
+        # relayed as-is rather than appending a one-size-fits-all explanation
+        # that could misattribute the actual cause.
+        print(f"error: could not prepare {args.data!r}: {e}", file=sys.stderr)
         return 1
     if n_qubits < args.qubits:
         print(f"note: using {n_qubits} qubits (dataset only has {n_qubits} usable features)", file=sys.stderr)
